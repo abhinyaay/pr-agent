@@ -378,6 +378,25 @@ class TestHandleLineComments:
         result = github_app.handle_line_comments(body, "just a comment")
         assert result == "just a comment"
 
+    def test_other_command_mentioning_ask_is_not_rerouted(self):
+        # A line comment that leads with another command but merely mentions
+        # "/ask" further in the text must keep its own command and must NOT be
+        # rewritten into an /ask_line argv list (issue #3793). The old
+        # `'/ask' in comment_body` substring check rerouted it.
+        body = self._payload()
+        comment_body = "/review this looks risky, I will /ask about it later"
+        result = github_app.handle_line_comments(body, comment_body)
+        assert result == comment_body
+
+    def test_leading_ask_with_whitespace_still_builds_ask_line(self):
+        # Guard against over-tightening: a genuine, whitespace-padded /ask line
+        # comment must still route to /ask_line after the startswith() change.
+        body = self._payload()
+        result = github_app.handle_line_comments(body, "   /ask why is this here?")
+        assert isinstance(result, list)
+        assert result[0] == "/ask_line"
+        assert result[-1] == "why is this here?"
+
 
 # ---------------------------------------------------------------------------
 # _check_pull_request_event

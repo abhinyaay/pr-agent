@@ -115,6 +115,18 @@ async def test_gitlab_diffnote_starting_with_ask_still_routes_to_ask_line(monkey
     assert "why is this null?" in body
 
 
+async def test_gitlab_diffnote_other_command_mentioning_ask_is_not_rerouted(monkeypatch):
+    # A DiffNote that leads with another command but mentions "/ask" later must
+    # dispatch that command verbatim, not be rewritten into /ask_line (#3793).
+    dispatched = await _run_gitlab_note_webhook(
+        monkeypatch, "/improve and please do not /ask anything", note_type="DiffNote")
+
+    assert dispatched == [(
+        "https://gitlab.example.com/group/repo/-/merge_requests/1",
+        "/improve and please do not /ask anything",
+    )]
+
+
 async def _run_bitbucket_comment_webhook(monkeypatch, comment_body):
     dispatched = []
     payload = {
